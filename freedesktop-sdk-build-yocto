@@ -53,6 +53,7 @@ for layername in ${LAYERNAMES}; do
 done
 
 SSTATE_DIR="${workdir}/sstate-cache"
+
 DL_DIR="${workdir}/downloads"
 
 cat > ${workdir}/${architecture}/conf/bblayers.conf <<EOF
@@ -96,6 +97,15 @@ SSTATE_DIR = "${SSTATE_DIR}"
 DL_DIR = "${DL_DIR}"
 INHERIT += "rm_work"
 ${EXTRA}
+
+MACHINE = "qemux86-64"
+require conf/multilib.conf
+MULTILIBS = "multilib:lib32"
+DEFAULTTUNE_virtclass-multilib-lib32 = "x86"
+
+# Specify the 32-bit libraries to be added to all images
+IMAGE_INSTALL_append = "lib32-glibc lib32-libgcc lib32-libstdc++"
+
 EOF
     mv ${localconf}.tmp ${localconf}
 fi
