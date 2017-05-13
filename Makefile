@@ -44,7 +44,6 @@ ${IMAGES} allimages:
 sdk: ${FILE_REF_SDK}
 
 ${FILE_REF_SDK}: metadata.sdk.in ${SDK_IMAGE}
-	if [ !  -d ${REPO} ]; then  ostree  init --mode=archive-z2 --repo=${REPO};  fi
 	rm -rf sdk
 	mkdir sdk
 	(cd sdk; tar --transform 's,^./usr,files,S' --transform 's,^./etc,files/etc,S' --exclude="./[!eu]*" -xvf ../${SDK_IMAGE}  > /dev/null)
@@ -53,14 +52,16 @@ ${FILE_REF_SDK}: metadata.sdk.in ${SDK_IMAGE}
 	find sdk -type f -name '*.pyc' -exec sh -c 'test "$$1" -ot "$${1%c}"' -- {} \; -print -delete # Remove stale 2.7 .pyc files
 	find sdk -type f -name '*.pyo' -exec sh -c 'test "$$1" -ot "$${1%o}"' -- {} \; -print -delete # Remove stale 2.7 .pyc files
 	$(call subst-metadata,metadata.sdk.in,sdk/metadata)
-	ostree commit ${COMMIT_ARGS} ${GPG_ARGS} --branch=${REF_SDK}  -s "build of ${HASH}" sdk
-	ostree summary -u --repo=${REPO} ${GPG_ARGS}
+	echo '#!/bin/bash' >> sdk_ostree_commit.sh
+	echo '	if [ !  -d ${REPO} ]; then  ostree  init --mode=archive-z2 --repo=${REPO};  fi' >> sdk_ostree_commit.sh
+	echo 'ostree commit ${COMMIT_ARGS} ${GPG_ARGS} --branch=${REF_SDK}  -s "build of ${HASH}" sdk' >> sdk_ostree_commit.sh
+	echo 'ostree summary -u --repo=${REPO} ${GPG_ARGS}'
+	tar -czvf sdk.tar.gz sdk
 	rm -rf sdk
 
 platform: ${FILE_REF_PLATFORM}
 
 ${FILE_REF_PLATFORM}: metadata.platform.in ${PLATFORM_IMAGE}
-	if [ !  -d ${REPO} ]; then  ostree  init --mode=archive-z2 --repo=${REPO};  fi
 	rm -rf platform
 	mkdir platform
 	(cd platform; tar --transform 's,^./usr,files,S' --transform 's,^./etc,files/etc,S' --exclude="./[!eu]*" -xvf ../${PLATFORM_IMAGE}  > /dev/null)
@@ -69,8 +70,12 @@ ${FILE_REF_PLATFORM}: metadata.platform.in ${PLATFORM_IMAGE}
 	find platform -type f -name '*.pyc' -exec sh -c 'test "$$1" -ot "$${1%c}"' -- {} \; -print -delete # Remove stale 2.7 .pyc files
 	find platform -type f -name '*.pyo' -exec sh -c 'test "$$1" -ot "$${1%o}"' -- {} \; -print -delete # Remove stale 2.7 .pyc files
 	$(call subst-metadata,metadata.platform.in,platform/metadata)
-	ostree commit ${COMMIT_ARGS} ${GPG_ARGS} --branch=${REF_PLATFORM}  -s "build of ${HASH}" platform
-	ostree summary -u --repo=${REPO} ${GPG_ARGS}
+
+	echo '#!/bin/bash' >> platform_ostree_commit.sh
+	echo '	if [ !  -d ${REPO} ]; then  ostree  init --mode=archive-z2 --repo=${REPO};  fi' >> platform_ostree_commit.sh
+	echo 'ostree commit ${COMMIT_ARGS} ${GPG_ARGS} --branch=${REF_PLATFORM}  -s "build of ${HASH}" platform' >> platform_ostree_commit.sh
+	echo 'ostree summary -u --repo=${REPO} ${GPG_ARGS}' >> platform_ostree_commit.sh
+	tar -czvf platform.tar.gz platform
 	rm -rf platform
 
 sandboxed:
